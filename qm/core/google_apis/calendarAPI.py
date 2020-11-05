@@ -121,7 +121,7 @@ class GCalendar(GoogleMixin):
         }
 
         async with session:
-            resp = await session.post(f'https://www.googleapis.com/calendar/v3/calendars/{calendar_id}/events/watch',
+            resp = await session.post(f'{self.API_URL}/calendars/{calendar_id}/events/watch',
                                       json=body, headers=self._headers, ssl=False)
             async with resp:
                 return await resp.json()
@@ -136,6 +136,6 @@ class GCalendar(GoogleMixin):
         }
 
         async with session:
-            resp = await session.post(f'https://www.googleapis.com/calendar/v3/channels/stop',
+            resp = await session.post(f'{self.API_URL}/channels/stop',
                                       json=body, headers=self._headers, ssl=False)
             resp.close()
