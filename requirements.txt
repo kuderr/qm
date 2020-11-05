@@ -16,6 +16,8 @@ aiohttp
 ujson
 python-dotenv
 alembic
-psycopg2
+
+tortoise-orm
+aiomysql
 asyncpg
 aiosqlite

@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import uuid
+from typing import Generator, Dict, Union, List
 
 from aiohttp import ClientSession
 import ujson
@@ -13,7 +14,8 @@ class GCalendar(GoogleMixin):
     API_URL = 'https://www.googleapis.com/calendar/v3'
     QM_WEBHOOK_URL = settings.webhook_url
 
-    async def get_editors(self, calendar_id: str, *, session: ClientSession = None):
+    # Generator[YieldType, SendType, ReturnType]
+    async def get_editors(self, calendar_id: str, *, session: ClientSession = None) -> Generator[str, None, None]:
         if session is None:
             session = ClientSession()
 
@@ -34,7 +36,7 @@ class GCalendar(GoogleMixin):
                     if acl['role'] == 'writer':
                         yield acl['scope']['value']
 
-    async def get_my_calendars(self, *, session: ClientSession = None):
+    async def get_my_calendars(self, *, session: ClientSession = None) -> Generator[Dict[str, Union[str, bool, int]], None, None]:
         if session is None:
             session = ClientSession()
 
@@ -58,7 +60,7 @@ class GCalendar(GoogleMixin):
                     if calendar['accessRole'] == 'owner':
                         yield calendar
 
-    async def get_events(self, calendar_id: str, *, session: ClientSession = None):
+    async def get_events(self, calendar_id: str, *, session: ClientSession = None) -> Generator[Dict[str, Union[str, bool, int]], None, None]:
         if session is None:
             session = ClientSession()
 
@@ -108,7 +110,7 @@ class GCalendar(GoogleMixin):
                                        ssl=False)
             resp.close()
 
-    async def event_watch(self, calendar_id: str, *, session: ClientSession = None) -> dict:
+    async def event_watch(self, calendar_id: str, *, session: ClientSession = None) -> Dict[str, str]:
         if session is None:
             session = ClientSession(json_serialize=ujson.dumps)
 

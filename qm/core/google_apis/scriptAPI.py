@@ -1,4 +1,4 @@
-import os
+from typing import Dict
 
 from aiohttp import ClientSession
 import ujson
@@ -11,7 +11,7 @@ class GScript(GoogleMixin):
     API_URL = "https://script.googleapis.com/v1"
     SCRIPT_ID = settings.google_script_id
 
-    async def create_form(self, event_name: str, editors: list, question: str) -> dict:
+    async def create_form(self, event_name: str, editors: list, question: str) -> Dict[str, str]:
         body = {
             "function": "createForm",
             "parameters": [event_name, editors, question]
@@ -20,7 +20,7 @@ class GScript(GoogleMixin):
         result = await self.run_script(body)
         return result['response'].get('result')
 
-    async def open_form(self, form_id: str) -> dict:
+    async def open_form(self, form_id: str) -> None:
         body = {
             "function": "openForm",
             "parameters": [form_id]
