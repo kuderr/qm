@@ -1,30 +1,37 @@
 import pickle
 import os
-from functools import wraps
-from datetime import datetime
+from typing import List, Union
+import asyncio
 
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 from aiohttp import ClientSession
 import ujson
 
+from ..settings import settings
+
 
 class GoogleMixin:
-    __slots__ = ('_creds_path', '_token_path', '_scopes', '_creds', '_headers')
+    __slots__ = ('_creds_path', '_token_path', '_scopes',
+                 '_creds', '_headers', '_httpsession')
 
-    def __init__(self, creds_path: str, token_path: str, scopes: str or list):
+    def __init__(self, creds_path: str, scopes: Union[str, List[str]]):
         self._creds_path = creds_path
-        self._token_path = token_path
+
+        self._token_path = '{folder}{class_name}.pickle'.format(folder=settings.google_tokens_folder,
+                                                                class_name=type(self).__name__)
         self._scopes = scopes
         self._creds = None
+
+        self._httpsession = ClientSession(json_serialize=ujson.dumps)
 
         self._headers = {
             "Authorization": ""
         }
 
-        self.refresh_token()
+    def __del__(self):
+        asyncio.create_task(self._httpsession.close())
 
     def refresh_token(self) -> None:
         creds = None
@@ -46,23 +53,3 @@ class GoogleMixin:
 
         self._creds = creds
         self._headers["Authorization"] = f"Bearer {creds.token}"
-
-    # TODO: make decorators work in API classes
-    def token_check(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            if datetime.utcnow() >= self._creds.expiry:
-                self.refresh_token()
-
-            return await func(self, *args, **kwargs)
-
-        return wrapper
-
-    def httpsession_check(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            if not kwargs.get('session'):
-                kwargs['session'] = ClientSession(json_serialize=ujson.dumps)
-
-            return await func(*args, **kwargs)
-        return wrapper
