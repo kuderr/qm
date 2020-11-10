@@ -1,11 +1,11 @@
-from datetime import datetime
+from asyncio import events
+from datetime import date, datetime
 import asyncio
 from typing import Dict, List, Any
 
 
 from .models import Calendar, Event
-from .google_apis.calendarAPI import GCalendar
-from .google_apis.scriptAPI import GScript
+from .google import GCalendar, GScript
 from .settings import settings
 
 
@@ -26,6 +26,21 @@ class QueuesManager:
         self._new_events: List[str]
         self._deleted_events: List[str]
         self._old_events: List[str]
+
+    async def clear(self):
+        await self._calendar_service._httpsession.close()
+        await self._scripts_service._httpsession.close()
+
+    async def open_queues(self):
+        now = datetime.now().replace(second=0, microsecond=0)
+        events = await Event.filter(open_at=now, opened=False)
+
+        await asyncio.gather(*[self.open_form(event) for event in events])
+
+    async def open_form(self, event: Event):
+        await self._scripts_service.open_form(event.form_id)
+        event.opened = True
+        await event.save()
 
     async def update_queues(self, calendar_id: str) -> None:
         self._calendar = await Calendar.get(google_id=calendar_id)
@@ -58,10 +73,10 @@ class QueuesManager:
         event = self._events[event_id]
         open_at = self.parse_datetime(event['start']['dateTime'])
 
-        await self.create_queue(event_id, event['summary'])
+        form_id = await self.create_queue(event_id, event['summary'])
 
         await Event.create(google_id=event_id, open_at=open_at, created=True,
-                           calendar_id=self._calendar.id)
+                           calendar_id=self._calendar.id, form_id=form_id)
 
     async def process_deleted(self, event_id: str) -> None:
         await Event.get(google_id=event_id).delete()
@@ -86,9 +101,12 @@ class QueuesManager:
 
         res = await self._scripts_service.create_form(event_name, editors, 'Имя')
         form_url = res['formUrl']
+        form_id = res['formId']
         spreadsheet_url = res['spreadsheetUrl']
 
         await self._calendar_service.add_attachment(self._calendar.google_id, event_id, form_url, spreadsheet_url)
+
+        return form_id
 
     @staticmethod
     def parse_datetime(date_time: str, format: str = '%Y-%m-%dT%H:%M:%S+03:00') -> datetime:

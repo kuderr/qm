@@ -38,6 +38,7 @@ class Event(RoleModel):
     The Event Model
     """
     google_id = fields.CharField(max_length=100, unique=True, null=False)
+    form_id = fields.CharField(max_length=200, unique=True, null=False)
     open_at = fields.DatetimeField(null=False)
     created = fields.BooleanField(default=False, null=False)
     opened = fields.BooleanField(default=False, null=False)

@@ -2,8 +2,11 @@ from functools import wraps
 from datetime import datetime
 from time import time
 
+COROUTINE = 'coro'
+GENERATOR = 'gen'
 
-def token_check(type: str = 'cor'):
+
+def token_check(type: str = COROUTINE):
     def decor(func):
         @wraps(func)
         async def cor_wrapper(self, *args, **kwargs):
@@ -19,7 +22,7 @@ def token_check(type: str = 'cor'):
 
             return func(self, *args, **kwargs)
 
-        if type == 'cor':
+        if type == COROUTINE:
             return cor_wrapper
         else:
             return gen_wrapper
