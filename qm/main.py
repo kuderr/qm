@@ -1,43 +1,40 @@
-from typing import Optional
+import asyncio
+import time
 
-import uvicorn
-from pydantic import BaseModel
-from fastapi import FastAPI, BackgroundTasks
-from fastapi import Header
+from tortoise import Tortoise
+import aioschedule
 
-from tortoise.contrib.fastapi import register_tortoise
+from core.settings import settings, create_logger
+from core.utils import qm_context
+from core.models import Calendar
 
-from core.settings import settings
-from core.utils import QueuesManager
-
-
-app = FastAPI()
+logger = create_logger("DEBUG")
 
 
-class Status(BaseModel):
-    message: str
+async def process_queues():
+    logger.info("Processing queues")
+    async with qm_context() as qm:
+        await qm.open_queues()
+        await asyncio.gather(
+            *[qm.update_queues(calendar) async for calendar in Calendar.all()]
+        )
 
 
-@app.post('/calendar-webhook', response_model=Status, status_code=202)
-async def some_event_triggered(background_tasks: BackgroundTasks,
-                               x_goog_resource_uri: Optional[str] = Header(None)):
-
-    calendar_id = x_goog_resource_uri.split('/')[6]
-    calendar_id = calendar_id.replace('%40', '@')
-
-    qm = QueuesManager()
-    background_tasks.add_task(qm.update_queues, calendar_id)
-
-    return Status(message="Events patched")
-
-
-register_tortoise(
-    app,
-    db_url=settings.db_url,
-    generate_schemas=True,
-    modules={"models": ["core.models"]},
-)
+async def init():
+    logger.info("Initialization")
+    await Tortoise.init(db_url=settings.db_url, modules={"models": ["core.models"]})
+    aioschedule.every().minute.do(process_queues)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(init())
+    loop.run_until_complete(process_queues())
+    try:
+        logger.info("Starting loop")
+        while True:
+            loop.run_until_complete(aioschedule.run_pending())
+            time.sleep(0.1)
+    finally:
+        logger.info("Shutting down")
+        loop.run_until_complete(Tortoise.close_connections())

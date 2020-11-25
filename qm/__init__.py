@@ -1,3 +1,3 @@
-__version__ = '0.4'
-__author__ = 'Kudryavtsev Dmitriy'
-__authoremail__ = 'dakudryavtsev@miem.hse.ru'
+__version__ = "0.5"
+__author__ = "Kudryavtsev Dmitriy"
+__authoremail__ = "dakudryavtsev@miem.hse.ru"
