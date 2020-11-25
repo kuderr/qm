@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     try:
         logger.info("Starting loop")
-        loop.run_until_complete(main())
+        loop.run_until_complete(main(loop))
     finally:
         logger.info("Shutting down")
         loop.run_until_complete(Tortoise.close_connections())
