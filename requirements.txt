@@ -8,11 +8,13 @@ oauth2client==4.1.3
 
 wheel 
 aioschedule
+pydantic
 aiohttp
 ujson
 python-dotenv
 alembic
 
+aerich
 tortoise-orm
 aiomysql
 asyncpg

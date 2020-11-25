@@ -1,5 +1,6 @@
 import asyncio
 import time
+from datetime import datetime
 
 from tortoise import Tortoise
 import aioschedule
@@ -25,11 +26,20 @@ async def init():
     await Tortoise.init(db_url=settings.db_url, modules={"models": ["core.models"]})
     aioschedule.every().minute.do(process_queues)
 
+def wait_for_zero_sec():
+    now = datetime.now()
+    while now.second != 0:
+        now = datetime.now()
+        time.sleep(0.5)
 
 if __name__ == "__main__":
+    logger.info("Waiting for second 0")
+    wait_for_zero_sec() 
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(init())
     loop.run_until_complete(process_queues())
+
     try:
         logger.info("Starting loop")
         while True:

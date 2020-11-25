@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     google_calendar_scopes: typing.Set[str] = Field(..., env="GOOGLE_CALENDAR_SCOPES")
     google_script_scopes: typing.Set[str] = Field(..., env="GOOGLE_SCRIPT_SCOPES")
 
-    db_url: str = Field(..., "QM_DB_URL")
+    db_url: str = Field(..., env="QM_DB_URL")
 
     class Config:
         env_file = ".env"
