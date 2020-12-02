@@ -3,7 +3,6 @@ import time
 from datetime import datetime
 
 from tortoise import Tortoise
-import aioschedule
 
 from core.settings import settings, create_logger
 from core.utils import qm_context
@@ -13,6 +12,7 @@ logger = create_logger("DEBUG")
 
 
 def wait_for_zero_sec():
+    logger.info("Waiting for second 0")
     now = datetime.now()
     while now.second != 0:
         now = datetime.now()
@@ -33,22 +33,16 @@ async def process_queues():
         )
 
 
-async def main(loop):
-    while True:
-        loop.create_task(process_queues())
-        await asyncio.sleep(60)
-
-
 if __name__ == "__main__":
-    logger.info("Waiting for second 0")
-    wait_for_zero_sec()
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(init())
-
     try:
         logger.info("Starting loop")
-        loop.run_until_complete(main(loop))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(init())
+
+        while True:
+            loop.create_task(process_queues())
+            time.sleep(1)
+            wait_for_zero_sec()
     finally:
         logger.info("Shutting down")
         loop.run_until_complete(Tortoise.close_connections())
